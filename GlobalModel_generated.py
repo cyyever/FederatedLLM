@@ -8,40 +8,35 @@ import transformers
 from peft import (
     PeftModel,
     LoraConfig,
-    get_peft_model,
-    get_peft_model_state_dict,
     prepare_model_for_int8_training,
     set_peft_model_state_dict,
 )
 
-from transformers import GenerationConfig, LlamaForCausalLM, LlamaTokenizer,AutoTokenizer
+from transformers import (
+    GenerationConfig,
+    LlamaForCausalLM,
+    LlamaTokenizer,
+)
 from utils.callbacks import Iteratorize, Stream
 from utils.prompter import Prompter
-if torch.cuda.is_available():
-    device = "cuda"
-else:
-    device = "cpu"
 
-try:
-    if torch.backends.mps.is_available():
-        device = "mps"
-except:
-    pass
+assert torch.cuda.is_available()
+device = "cuda"
 
 
 def main(
     load_8bit: bool = False,
     base_model: str = "",
     lora_weights_path: str = "",
-    lora_config_path: str= "", # provide only the file path, excluding the file name 'adapter_config.json'
+    lora_config_path: str = "",  # provide only the file path, excluding the file name 'adapter_config.json'
     prompt_template: str = "",  # The prompt template to use, will default to alpaca.
     server_name: str = "127.0.0.1",
     share_gradio: bool = False,
 ):
     base_model = base_model or os.environ.get("BASE_MODEL", "")
-    assert (
-        base_model
-    ), "Please specify a --base_model, e.g. --base_model='huggyllama/llama-7b'"
+    assert base_model, (
+        "Please specify a --base_model, e.g. --base_model='huggyllama/llama-7b'"
+    )
 
     prompter = Prompter(prompt_template)
     tokenizer = LlamaTokenizer.from_pretrained(base_model)
@@ -90,9 +85,8 @@ def main(
         config = LoraConfig.from_pretrained(lora_config_path)
         lora_weights = torch.load(lora_weights_path)
         model = PeftModel(model, config)
-        set_peft_model_state_dict(model,lora_weights,"default")
+        set_peft_model_state_dict(model, lora_weights, "default")
         del lora_weights
-
 
     # unwind broken decapoda-research config
     model.config.pad_token_id = tokenizer.pad_token_id = 0  # unk
@@ -103,7 +97,6 @@ def main(
         model.half()  # seems to fix bugs for some users.
 
     model.eval()
-
 
     def evaluate(
         instruction,
@@ -144,16 +137,12 @@ def main(
                 kwargs.setdefault(
                     "stopping_criteria", transformers.StoppingCriteriaList()
                 )
-                kwargs["stopping_criteria"].append(
-                    Stream(callback_func=callback)
-                )
+                kwargs["stopping_criteria"].append(Stream(callback_func=callback))
                 with torch.no_grad():
                     model.generate(**kwargs)
 
             def generate_with_streaming(**kwargs):
-                return Iteratorize(
-                    generate_with_callback, kwargs, callback=None
-                )
+                return Iteratorize(generate_with_callback, kwargs, callback=None)
 
             with generate_with_streaming(**generate_params) as generator:
                 for output in generator:
@@ -179,7 +168,7 @@ def main(
         output = tokenizer.decode(s)
         yield prompter.get_response(output)
 
-    sherpherd_UI=gr.Interface(
+    sherpherd_UI = gr.Interface(
         fn=evaluate,
         inputs=[
             gr.components.Textbox(
@@ -188,18 +177,12 @@ def main(
                 placeholder="Tell me about alpacas.",
             ),
             gr.components.Textbox(lines=2, label="Input", placeholder="none"),
-            gr.components.Slider(
-                minimum=0, maximum=1, value=0.1, label="Temperature"
-            ),
-            gr.components.Slider(
-                minimum=0, maximum=1, value=0.75, label="Top p"
-            ),
+            gr.components.Slider(minimum=0, maximum=1, value=0.1, label="Temperature"),
+            gr.components.Slider(minimum=0, maximum=1, value=0.75, label="Top p"),
             gr.components.Slider(
                 minimum=0, maximum=100, step=1, value=40, label="Top k"
             ),
-            gr.components.Slider(
-                minimum=1, maximum=4, step=1, value=4, label="Beams"
-            ),
+            gr.components.Slider(minimum=1, maximum=4, step=1, value=4, label="Beams"),
             gr.components.Slider(
                 minimum=1, maximum=2000, step=1, value=128, label="Max tokens"
             ),
@@ -216,9 +199,6 @@ def main(
     ).queue()
 
     sherpherd_UI.launch(share=True)
-
-
-
 
 
 if __name__ == "__main__":

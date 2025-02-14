@@ -205,8 +205,8 @@ def fl_finetune(
         return tokenized_full_prompt
 
     # model = prepare_model_for_int8_training(model)
-    if full == False:
-        if stacking == False:
+    if not full:
+        if not stacking:
             if zero_padding:
                 config_ori = LoraConfig(
                     base_model_name_or_path=global_model,

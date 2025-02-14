@@ -7,7 +7,7 @@ import os.path as osp
 from typing import Union
 
 
-class Prompter(object):
+class Prompter:
     __slots__ = ("template", "_verbose")
 
     def __init__(self, template_name: str = "", verbose: bool = False):
@@ -18,7 +18,7 @@ class Prompter(object):
         file_name = osp.join("templates", f"{template_name}.json")
         if not osp.exists(file_name):
             raise ValueError(f"Can't read {file_name}")
-        with open(file_name) as fp:
+        with open(file_name, encoding="utf8") as fp:
             self.template = json.load(fp)
         if self._verbose:
             print(
@@ -38,9 +38,7 @@ class Prompter(object):
                 instruction=instruction, input=input
             )
         else:
-            res = self.template["prompt_no_input"].format(
-                instruction=instruction
-            )
+            res = self.template["prompt_no_input"].format(instruction=instruction)
         if label:
             res = f"{res}{label}"
         if self._verbose:
