@@ -1,4 +1,5 @@
 import os
+import transformers
 from typing import List
 from tqdm import tqdm
 import fire
@@ -110,7 +111,7 @@ def fl_finetune(
         gradient_accumulation_steps = gradient_accumulation_steps // world_size
 
     if global_model == "gpt2":
-        model = GPT2LMHeadModel.from_pretrained(
+        model = AutoModelForCausalLM.from_pretrained(
             global_model,
             load_in_8bit=False,
             torch_dtype=torch.float32,
@@ -122,29 +123,21 @@ def fl_finetune(
             load_in_8bit=False,
             torch_dtype=torch.float32,
             device_map=device_map,
-            token="your token",
         )
     else:
-        model = LlamaForCausalLM.from_pretrained(
+        model = AutoModelForCausalLM.from_pretrained(
             global_model,
             load_in_8bit=False,
             torch_dtype=torch.float32,
             device_map=device_map,
-            token="your token",
         )
 
     if global_model == "gpt2":
         tokenizer = GPT2Tokenizer.from_pretrained(global_model)
     elif global_model == "google/gemma-2b" or global_model == "google/gemma-7b":
-        tokenizer = AutoTokenizer.from_pretrained(
-            global_model,
-            token="your_token",
-        )
+        tokenizer = AutoTokenizer.from_pretrained(global_model)
     else:
-        tokenizer = LlamaTokenizer.from_pretrained(
-            global_model,
-            token="your_token",
-        )
+        tokenizer = LlamaTokenizer.from_pretrained(global_model)
 
     tokenizer.pad_token_id = 0
     tokenizer.padding_side = "left"
@@ -379,7 +372,7 @@ def fl_finetune(
                 config_ori.save_pretrained(
                     os.path.join(output_dir, str(epoch)),
                     load_in_8bit=False,
-                    torch_dtype=torch.float16,
+                    torch_dtype=torch.float32,
                     device_map=device_map,
                 )
                 model = PeftModel.from_pretrained(
@@ -393,7 +386,7 @@ def fl_finetune(
                 config.save_pretrained(
                     os.path.join(output_dir, str(epoch)),
                     load_in_8bit=False,
-                    torch_dtype=torch.float16,
+                    torch_dtype=torch.float32,
                     device_map=device_map,
                 )
         else:
