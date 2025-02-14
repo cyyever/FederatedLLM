@@ -9,7 +9,6 @@ from transformers import (
     LlamaTokenizer,
     LlamaForCausalLM,
     GPT2Tokenizer,
-    GPT2Model,
     GPT2LMHeadModel,
     AutoConfig,
 )
@@ -19,7 +18,6 @@ from peft import (
     # prepare_model_for_int8_training,
     PeftModel,
     AdaLoraConfig,
-    AdaLoraModel,
 )
 from fed_utils import FedAvg, client_selection, global_evaluation, GeneralClient
 from utils.prompter import Prompter
