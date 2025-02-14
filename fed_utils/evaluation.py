@@ -94,6 +94,7 @@ def global_evaluation(model, tokenizer, prompter, dev_data_path):
     with open(dev_data_path, "r") as f:
         test_set = json.load(f)
     count = 0
+    sampling = None
 
     if model_type == "llama":
         sampling = GenerationConfig(
@@ -129,11 +130,12 @@ def global_evaluation(model, tokenizer, prompter, dev_data_path):
 
         with torch.autocast("cuda"):
             inputs = tokenizer(test_prompt, return_tensors="pt")
-            input = inputs["input_ids"].to("cuda")
+            input_ids = inputs["input_ids"].to("cuda")
             with torch.no_grad():
                 # print(tokenizer.eos_token_id, tokenizer.pad_token_id)
+                assert sampling is not None
                 generation_output = model.generate(
-                    input_ids=input,
+                    input_ids=input_ids,
                     generation_config=sampling,
                     return_dict_in_generate=True,
                     output_scores=True,
