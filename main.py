@@ -6,11 +6,6 @@ import fire
 import torch
 from transformers import (
     AutoModelForCausalLM,
-    AutoTokenizer,
-    LlamaTokenizer,
-    LlamaForCausalLM,
-    GPT2Tokenizer,
-    GPT2LMHeadModel,
     AutoConfig,
 )
 from peft import (
@@ -131,15 +126,12 @@ def fl_finetune(
             torch_dtype=torch.float32,
             device_map=device_map,
         )
+    print(model)
 
-    if global_model == "gpt2":
-        tokenizer = GPT2Tokenizer.from_pretrained(global_model)
-    elif global_model == "google/gemma-2b" or global_model == "google/gemma-7b":
-        tokenizer = AutoTokenizer.from_pretrained(global_model)
-    else:
-        tokenizer = LlamaTokenizer.from_pretrained(global_model)
+    tokenizer = transformers.AutoTokenizer.from_pretrained(global_model)
 
-    tokenizer.pad_token_id = 0
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"
 
     def tokenize(prompt, add_eos_token=True):
@@ -156,10 +148,8 @@ def fl_finetune(
             and add_eos_token
         ):
             result["input_ids"].append(tokenizer.eos_token_id)
-            result["attention_mask"].append(1)
-
-        result["labels"] = result["input_ids"].copy()
-
+            result["attention_mask"].append(0)
+        result["labels"] = copy.deepcopy(result["input_ids"])
         return result
 
     def generate_and_tokenize_prompt(data_point):

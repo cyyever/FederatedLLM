@@ -77,7 +77,7 @@ class GeneralClient:
             eval_dataset=self.local_eval_dataset,
             args=self.train_args,
             data_collator=transformers.DataCollatorForSeq2Seq(
-                tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
+                tokenizer, return_tensors="pt", padding=True
             ),
         )
 
