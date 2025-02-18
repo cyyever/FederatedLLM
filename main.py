@@ -23,25 +23,26 @@ import copy
 
 def fl_finetune(
     # model/data params
-    global_model: str = "huggyllama/llama-7b",
-    #global_model:str = "meta/llama3-8b"
+    # global_model: str = "huggyllama/llama-7b",
+    global_model: str = "meta-llama/Llama-3.2-3B-Instruct",
     data_path: str = "./data",
-    output_dir: str = "./fedgpt-llama7b-5-2/",
+    # output_dir: str = "./fedgpt-llama7b-5-2/",
+    output_dir: str = "./Llama-3.2-3B-Instruct/",
     # FL hyperparamas
     client_selection_strategy: str = "random",
-    client_selection_frac: float = 1,#float = 0.5
+    client_selection_frac: float = 1,  # float = 0.5
     num_communication_rounds: int = 3,
     num_clients: int = 10,
     # Local training hyperparams
     local_batch_size: int = 8,  # 64,
-    local_micro_batch_size: int = 8,#16
-    local_num_epochs: int = 1, #3
+    local_micro_batch_size: int = 8,  # 16
+    local_num_epochs: int = 1,  # 3
     local_learning_rate: float = 3e-4,
     local_val_set_size: int = 0,
     local_save_steps: int = 3,
     cutoff_len: int = 512,
     # LoRA hyperparams
-    lora_r: int = 8,#16
+    lora_r: int = 8,  # 16
     lora_alpha: int = 32,
     lora_dropout: float = 0.05,
     lora_target_modules: List[str] = [
@@ -107,27 +108,27 @@ def fl_finetune(
         device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)}
         gradient_accumulation_steps = gradient_accumulation_steps // world_size
 
-    if global_model == "gpt2":
-        model = AutoModelForCausalLM.from_pretrained(
-            global_model,
-            load_in_8bit=False,
-            torch_dtype=torch.float32,
-            device_map=device_map,
-        )
-    elif global_model == "google/gemma-2b" or global_model == "google/gemma-7b":
-        model = AutoModelForCausalLM.from_pretrained(
-            global_model,
-            load_in_8bit=False,
-            torch_dtype=torch.float32,
-            device_map=device_map,
-        )
-    else:
-        model = AutoModelForCausalLM.from_pretrained(
-            global_model,
-            load_in_8bit=False,
-            torch_dtype=torch.float32,
-            device_map=device_map,
-        )
+    # if global_model == "gpt2":
+    #     model = AutoModelForCausalLM.from_pretrained(
+    #         global_model,
+    #         load_in_8bit=False,
+    #         torch_dtype=torch.float32,
+    #         device_map=device_map,
+    #     )
+    # elif global_model == "google/gemma-2b" or global_model == "google/gemma-7b":
+    #     model = AutoModelForCausalLM.from_pretrained(
+    #         global_model,
+    #         load_in_8bit=False,
+    #         torch_dtype=torch.float32,
+    #         device_map=device_map,
+    #     )
+    # else:
+    model = AutoModelForCausalLM.from_pretrained(
+        global_model,
+        load_in_8bit=False,
+        torch_dtype=torch.float16,
+        device_map=device_map,
+    )
     print(model)
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(global_model)
@@ -155,24 +156,24 @@ def fl_finetune(
         return result
 
     def generate_and_tokenize_prompt(data_point):
-        if data_path == "./data/10":
-            full_prompt = prompter.generate_prompt(
-                data_point["instruction"],
-                data_point["context"],
-                data_point["response"],
-            )
-        elif data_path == "./data_wiz/3" or data_path == "./data_mix/20":
-            full_prompt = prompter.generate_prompt(
-                data_point["instruction"],
-                None,
-                data_point["output"],
-            )
-        else:
-            full_prompt = prompter.generate_prompt(
-                data_point["instruction"],
-                data_point["input"],
-                data_point["output"],
-            )
+        # if data_path == "./data/10":
+        #     full_prompt = prompter.generate_prompt(
+        #         data_point["instruction"],
+        #         data_point["context"],
+        #         data_point["response"],
+        #     )
+        # elif data_path == "./data_wiz/3" or data_path == "./data_mix/20":
+        #     full_prompt = prompter.generate_prompt(
+        #         data_point["instruction"],
+        #         None,
+        #         data_point["output"],
+        #     )
+        # else:
+        full_prompt = prompter.generate_prompt(
+            data_point["instruction"],
+            data_point.get("input"),
+            data_point["output"],
+        )
 
         tokenized_full_prompt = tokenize(full_prompt)
         if not train_on_inputs:
@@ -225,9 +226,9 @@ def fl_finetune(
                 task_type="CAUSAL_LM",
             )
 
-    if not ddp and torch.cuda.device_count() > 1:
-        model.is_parallelizable = True
-        model.model_parallel = True
+    # if not ddp and torch.cuda.device_count() > 1:
+    #     model.is_parallelizable = True
+    #     model.model_parallel = True
 
     print("The process of federated instruction-tuning has started..")
     previously_selected_clients_set = set()
