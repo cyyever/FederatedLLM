@@ -4,6 +4,7 @@ from typing import List
 from tqdm import tqdm
 import fire
 import torch
+
 from transformers import (
     AutoModelForCausalLM,
     AutoConfig,
@@ -23,23 +24,24 @@ import copy
 def fl_finetune(
     # model/data params
     global_model: str = "huggyllama/llama-7b",
+    #global_model:str = "meta/llama3-8b"
     data_path: str = "./data",
     output_dir: str = "./fedgpt-llama7b-5-2/",
     # FL hyperparamas
     client_selection_strategy: str = "random",
-    client_selection_frac: float = 1,
-    num_communication_rounds: int = 5,
-    num_clients: int = 10,
+    client_selection_frac: float = 1,#float = 0.5
+    num_communication_rounds: int = 3,
+    num_clients: int = 3,#10
     # Local training hyperparams
-    local_batch_size: int = 128,  # 64,
-    local_micro_batch_size: int = 16,
-    local_num_epochs: int = 3,
+    local_batch_size: int = 8,  # 64,
+    local_micro_batch_size: int = 8,#16
+    local_num_epochs: int = 1, #3
     local_learning_rate: float = 3e-4,
     local_val_set_size: int = 0,
     local_save_steps: int = 3,
     cutoff_len: int = 512,
     # LoRA hyperparams
-    lora_r: int = 16,
+    lora_r: int = 8,#16
     lora_alpha: int = 32,
     lora_dropout: float = 0.05,
     lora_target_modules: List[str] = [
@@ -159,7 +161,7 @@ def fl_finetune(
                 data_point["context"],
                 data_point["response"],
             )
-        elif data_path == "./data_wiz/10" or data_path == "./data_mix/20":
+        elif data_path == "./data_wiz/3" or data_path == "./data_mix/20":
             full_prompt = prompter.generate_prompt(
                 data_point["instruction"],
                 None,
