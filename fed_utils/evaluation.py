@@ -104,7 +104,7 @@ def global_evaluation(model, tokenizer, prompter, dev_data_path):
             top_k=30,
             num_beams=1,
             max_new_tokens=max_new_token,
-            early_stopping=True,
+            early_stopping=False,
         )
 
     if model_type == "gpt2":
